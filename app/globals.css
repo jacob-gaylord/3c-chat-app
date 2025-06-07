@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 200 100% 26%; /* #005285 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 38% 25%; /* #294258 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 195 56% 62%; /* #6bb7d0 */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 200 100% 26%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 210 38% 8%; /* Dark version of #294258 */
+    --foreground: 0 0% 98%;
+    --card: 210 38% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 38% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 200 100% 26%; /* #005285 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 38% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 210 38% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 195 56% 62%; /* #6bb7d0 */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 38% 20%;
+    --input: 210 38% 20%;
+    --ring: 200 100% 26%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar styles that adapt to theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.7);
+}
+
+/* Remove hardcoded prose styles and let theme handle colors */
+.prose {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose h1 {
+  font-size: 1.125rem;
+}
+
+.prose h2 {
+  font-size: 1rem;
+}
+
+.prose h3 {
+  font-size: 0.875rem;
+}
+
+.prose p {
+  margin-bottom: 0.75rem;
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 0.75rem;
+}
+
+.prose li {
+  margin-bottom: 0.25rem;
+}
+
+/* Textarea placeholder vertical alignment */
+textarea::placeholder {
+  line-height: 1.5;
+  vertical-align: middle;
+}
