@@ -17,6 +17,7 @@ export default function ChatInterface() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentView, setCurrentView] = useState<"home" | "chat">("chat")
   const [selectedChatId, setSelectedChatId] = useState<string>("sample-chat")
+  const [mounted, setMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
@@ -97,10 +98,15 @@ export default function ChatInterface() {
   })
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false)
     }
   }, [isMobile])
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -174,7 +180,7 @@ export default function ChatInterface() {
             className="hover:bg-accent/50 bg-card/50 backdrop-blur-sm"
             onClick={toggleTheme}
           >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </div>
 
