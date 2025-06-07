@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
+import type { Message } from "ai"
 import { Sidebar } from "@/components/sidebar"
 import { ChatInput } from "@/components/chat-input"
 import { ChatMessages } from "@/components/chat-messages"
@@ -12,12 +13,18 @@ import { Sun, Moon, Settings, PanelLeft } from "lucide-react"
 import { useMobile } from "@/hooks/use-mobile"
 import { useTheme } from "next-themes"
 
-export default function ChatInterface() {
+interface ChatInterfaceProps {
+  onSendMessage?: (content: string) => void
+  messages?: Message[]
+}
+
+export default function ChatInterface({ onSendMessage, messages: externalMessages }: ChatInterfaceProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentView, setCurrentView] = useState<"home" | "chat">("chat")
   const [selectedChatId, setSelectedChatId] = useState<string>("sample-chat")
   const [mounted, setMounted] = useState(false)
+  const [externalInput, setExternalInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
@@ -92,10 +99,28 @@ export default function ChatInterface() {
     },
   ]
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+  const { messages: internalMessages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: "/api/chat",
     initialMessages: currentView === "chat" ? sampleMessages : [],
   })
+
+  // Use external messages if provided, otherwise use internal messages
+  const messages = externalMessages || internalMessages
+
+  // Use external input management when onSendMessage is provided
+  const currentInput = onSendMessage ? externalInput : input
+  const currentHandleInputChange = onSendMessage 
+    ? (e: React.ChangeEvent<HTMLTextAreaElement>) => setExternalInput(e.target.value)
+    : handleInputChange
+
+  // Create custom submit handler for external onSendMessage
+  const customHandleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (onSendMessage && currentInput.trim()) {
+      onSendMessage(currentInput.trim())
+      setExternalInput("") // Clear input after sending
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -195,9 +220,9 @@ export default function ChatInterface() {
             {/* Floating chat input */}
             <div className="absolute bottom-6 left-6 right-6 z-10">
               <ChatInput
-                input={input}
-                handleInputChange={handleInputChange}
-                handleSubmit={handleSubmit}
+                input={currentInput}
+                handleInputChange={currentHandleInputChange}
+                handleSubmit={onSendMessage ? customHandleSubmit : handleSubmit}
                 isLoading={isLoading}
               />
             </div>

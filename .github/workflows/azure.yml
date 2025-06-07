@@ -1,0 +1,103 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 8
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Run linter
+      run: pnpm lint
+
+    - name: Build application
+      run: pnpm build
+
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Install Azure Developer CLI
+      uses: azure/setup-azd@v1.0.0
+
+    - name: Log in with Azure Developer CLI
+      run: |
+        azd auth login \
+          --client-id "${{ env.AZURE_CLIENT_ID }}" \
+          --federated-credential-provider "github" \
+          --tenant-id "${{ env.AZURE_TENANT_ID }}"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Install Azure Developer CLI
+      uses: azure/setup-azd@v1.0.0
+
+    - name: Log in with Azure Developer CLI
+      run: |
+        azd auth login \
+          --client-id "${{ env.AZURE_CLIENT_ID }}" \
+          --federated-credential-provider "github" \
+          --tenant-id "${{ env.AZURE_TENANT_ID }}"
+
+    - name: Azure Dev Provision
+      run: azd provision --no-prompt
+      env:
+        AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Azure Dev Deploy
+      run: azd deploy --no-prompt
+      env:
+        AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
