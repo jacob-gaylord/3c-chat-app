@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import type { Message } from "ai"
+import type { Message } from "@/lib/types"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
@@ -11,10 +11,12 @@ import { useTheme } from "next-themes"
 
 interface ChatMessagesProps {
   messages: Message[]
-  messagesEndRef: React.RefObject<HTMLDivElement>
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
+  isStreaming?: boolean
+  currentStreamingId?: string
 }
 
-export function ChatMessages({ messages, messagesEndRef }: ChatMessagesProps) {
+export function ChatMessages({ messages, messagesEndRef, isStreaming, currentStreamingId }: ChatMessagesProps) {
   const [hasMessages, setHasMessages] = useState(false)
   const { theme } = useTheme()
 
@@ -190,6 +192,16 @@ export function ChatMessages({ messages, messagesEndRef }: ChatMessagesProps) {
                       >
                         {message.content}
                       </ReactMarkdown>
+                      {isStreaming && currentStreamingId === message.id && (
+                        <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce"></div>
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                          <span>Generating...</span>
+                        </div>
+                      )}
                     </div>
                     <MessageActions messageId={message.id} content={message.content} modelName="o3-mini" />
                   </div>

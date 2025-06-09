@@ -1,17 +1,18 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useChat } from "@ai-sdk/react"
-import type { Message } from "ai"
+import { useChat } from "@/hooks/use-chat"
+import type { Message } from "@/lib/types"
 import { Sidebar } from "@/components/sidebar"
 import { ChatInput } from "@/components/chat-input"
 import { ChatMessages } from "@/components/chat-messages"
 import { HomePage } from "@/components/home-page"
 import { SettingsModal } from "@/components/settings-modal"
 import { Button } from "@/components/ui/button"
-import { Sun, Moon, Settings, PanelLeft } from "lucide-react"
+import { Sun, Moon, Settings, PanelLeft, AlertCircle } from "lucide-react"
 import { useMobile } from "@/hooks/use-mobile"
 import { useTheme } from "next-themes"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ChatInterfaceProps {
   onSendMessage?: (content: string) => void
@@ -24,21 +25,22 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
   const [currentView, setCurrentView] = useState<"home" | "chat">("chat")
   const [selectedChatId, setSelectedChatId] = useState<string>("sample-chat")
   const [mounted, setMounted] = useState(false)
-  const [externalInput, setExternalInput] = useState("")
+  const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
 
   // Sample conversation data
-  const sampleMessages = [
+  const sampleMessages: Message[] = [
     {
       id: "1",
-      role: "user" as const,
+      role: "user",
       content: "How does AI work?",
+      timestamp: new Date(Date.now() - 300000), // 5 minutes ago
     },
     {
       id: "2",
-      role: "assistant" as const,
+      role: "assistant",
       content: `AI, or Artificial Intelligence, is a broad field of computer science that gives computers the ability to perform human-like tasks. It's not one single technology, but rather a collection of techniques and approaches. Here's a simplified breakdown of how it generally works:
 
 **At its core, AI aims to mimic cognitive functions associated with the human mind, such as:**
@@ -58,15 +60,17 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
    • **Machine Learning (ML):** This is a subset of AI that focuses on teaching computers to learn from data without being explicitly programmed for every scenario. Instead of writing code for every possible outcome, you feed the machine data and it learns patterns.
 
    • **Supervised Learning:** The AI learns from labeled data, where the desired output is known. For example, showing it thousands of pictures labeled "cat" or "dog" so it can learn to distinguish between them.`,
+      timestamp: new Date(Date.now() - 280000), // 4 minutes 40 seconds ago
     },
     {
       id: "3",
-      role: "user" as const,
+      role: "user",
       content: "Can you explain machine learning in more detail?",
+      timestamp: new Date(Date.now() - 120000), // 2 minutes ago
     },
     {
       id: "4",
-      role: "assistant" as const,
+      role: "assistant",
       content: `**Machine Learning (ML)** is a method of data analysis that automates analytical model building. It's based on the idea that systems can learn from data, identify patterns, and make decisions with minimal human intervention.
 
 **How Machine Learning Works:**
@@ -96,30 +100,40 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
 - Recommendation systems
 - Fraud detection
 - Autonomous vehicles`,
+      timestamp: new Date(Date.now() - 100000), // 1 minute 40 seconds ago
     },
   ]
 
-  const { messages: internalMessages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    api: "/api/chat",
-    initialMessages: currentView === "chat" ? sampleMessages : [],
-  })
+  const { 
+    messages: internalMessages, 
+    sendMessage, 
+    isLoading, 
+    error, 
+    streamingState,
+    clearMessages,
+    cancelStream
+  } = useChat()
 
   // Use external messages if provided, otherwise use internal messages
-  const messages = externalMessages || internalMessages
+  const messages = externalMessages || (selectedChatId === "sample-chat" ? sampleMessages : internalMessages)
 
-  // Use external input management when onSendMessage is provided
-  const currentInput = onSendMessage ? externalInput : input
-  const currentHandleInputChange = onSendMessage 
-    ? (e: React.ChangeEvent<HTMLTextAreaElement>) => setExternalInput(e.target.value)
-    : handleInputChange
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }
 
-  // Create custom submit handler for external onSendMessage
-  const customHandleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (onSendMessage && currentInput.trim()) {
-      onSendMessage(currentInput.trim())
-      setExternalInput("") // Clear input after sending
+    if (!input.trim()) return
+
+    if (onSendMessage) {
+      onSendMessage(input.trim())
+    } else {
+      await sendMessage(input.trim())
     }
+    
+    setInput("")
   }
 
   useEffect(() => {
@@ -144,10 +158,8 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
   const handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId)
     setCurrentView("chat")
-    if (chatId === "sample-chat") {
-      setMessages(sampleMessages)
-    } else {
-      setMessages([])
+    if (chatId !== "sample-chat") {
+      clearMessages()
     }
   }
 
@@ -159,7 +171,7 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
   const handleNewChat = () => {
     setCurrentView("chat")
     setSelectedChatId("")
-    setMessages([])
+    clearMessages()
   }
 
   return (
@@ -214,16 +226,42 @@ export default function ChatInterface({ onSendMessage, messages: externalMessage
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-6 pt-16 pb-32">
-              <ChatMessages messages={messages} messagesEndRef={messagesEndRef} />
+              {/* Error Alert */}
+              {error && (
+                <div className="mb-4">
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {error.message}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-6 px-2"
+                        onClick={() => window.location.reload()}
+                      >
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              <ChatMessages 
+                messages={messages} 
+                messagesEndRef={messagesEndRef} 
+                isStreaming={streamingState.isStreaming}
+                currentStreamingId={streamingState.currentMessageId}
+              />
             </div>
 
             {/* Floating chat input */}
             <div className="absolute bottom-6 left-6 right-6 z-10">
               <ChatInput
-                input={currentInput}
-                handleInputChange={currentHandleInputChange}
-                handleSubmit={onSendMessage ? customHandleSubmit : handleSubmit}
+                input={input}
+                handleInputChange={handleInputChange}
+                handleSubmit={handleSubmit}
                 isLoading={isLoading}
+                onCancel={streamingState.isStreaming ? cancelStream : undefined}
               />
             </div>
           </>

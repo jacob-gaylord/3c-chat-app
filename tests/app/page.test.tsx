@@ -1,17 +1,20 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
+import { describe, it, expect, vi } from 'vitest'
 import Home from '@/app/page'
 
 // Mock the ChatInterface component
-jest.mock('@/components/chat-interface', () => {
-  return function MockChatInterface(props: any) {
-    return (
-      <div data-testid="chat-interface">
-        {props.onSendMessage && <div data-testid="external-mode">External Mode</div>}
-        {props.messages !== undefined && <div data-testid="external-messages">External Messages</div>}
-      </div>
-    )
+vi.mock('@/components/chat-interface', () => {
+  return {
+    default: function MockChatInterface(props: any) {
+      return (
+        <div data-testid="chat-interface">
+          {props.onSendMessage && <div data-testid="external-mode">External Mode</div>}
+          {props.messages !== undefined && <div data-testid="external-messages">External Messages</div>}
+        </div>
+      )
+    }
   }
 })
 
@@ -33,9 +36,9 @@ describe('Home Page', () => {
 
 // Test the basic chat functionality scenario
 describe('Chat Page (Basic Mode)', () => {
-  it('should handle message state correctly when using external props', () => {
+  it('should handle message state correctly when using external props', async () => {
     // Test the mock directly with external props
-    const MockChatInterface = jest.requireMock('@/components/chat-interface')
+    const { default: MockChatInterface } = await import('@/components/chat-interface')
     
     render(<MockChatInterface onSendMessage={() => {}} messages={[]} />)
     

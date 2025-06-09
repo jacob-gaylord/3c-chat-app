@@ -4,7 +4,7 @@ import type React from "react"
 import { type FormEvent, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Paperclip, ArrowUp, Loader2 } from "lucide-react"
+import { Search, Paperclip, ArrowUp, Loader2, X } from "lucide-react"
 import { ModelSelector } from "@/components/model-selector"
 
 interface ChatInputProps {
@@ -12,9 +12,10 @@ interface ChatInputProps {
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   handleSubmit: (e: FormEvent<HTMLFormElement>) => void
   isLoading: boolean
+  onCancel?: () => void
 }
 
-export function ChatInput({ input, handleInputChange, handleSubmit, isLoading }: ChatInputProps) {
+export function ChatInput({ input, handleInputChange, handleSubmit, isLoading, onCancel }: ChatInputProps) {
   const [selectedModel, setSelectedModel] = useState("o3-mini")
   const [searchActive, setSearchActive] = useState(false)
 
@@ -56,14 +57,27 @@ export function ChatInput({ input, handleInputChange, handleSubmit, isLoading }:
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/50" title="Attach files">
             <Paperclip className="h-4 w-4" />
           </Button>
-          <Button
-            type="submit"
-            size="icon"
-            className="h-8 w-8 bg-primary hover:bg-primary/90 rounded-full shadow-lg"
-            disabled={isLoading || !input.trim()}
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-          </Button>
+          {isLoading && onCancel ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              className="h-8 w-8 rounded-full shadow-lg"
+              onClick={onCancel}
+              title="Cancel generation"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              className="h-8 w-8 bg-primary hover:bg-primary/90 rounded-full shadow-lg"
+              disabled={isLoading || !input.trim()}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </form>
     </div>

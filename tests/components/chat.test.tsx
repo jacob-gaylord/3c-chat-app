@@ -2,11 +2,12 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
+import { describe, it, expect, vi } from 'vitest'
 import ChatInterface from '@/components/chat-interface'
 import { ThemeProvider } from '@/components/theme-provider'
 
 // Mock components that might cause issues
-jest.mock('@/components/sidebar', () => ({
+vi.mock('@/components/sidebar', () => ({
   Sidebar: ({ onNewChat, onHomeClick }: any) => (
     <div data-testid="sidebar">
       <button onClick={onNewChat} data-testid="new-chat">New Chat</button>
@@ -15,7 +16,7 @@ jest.mock('@/components/sidebar', () => ({
   ),
 }))
 
-jest.mock('@/components/home-page', () => ({
+vi.mock('@/components/home-page', () => ({
   HomePage: ({ onNewChat }: any) => (
     <div data-testid="home-page">
       <button onClick={onNewChat} data-testid="start-chat">Start Chat</button>
@@ -23,31 +24,58 @@ jest.mock('@/components/home-page', () => ({
   ),
 }))
 
-jest.mock('@/components/settings-modal', () => ({
+vi.mock('@/components/settings-modal', () => ({
   SettingsModal: ({ isOpen }: any) => 
     isOpen ? <div data-testid="settings-modal">Settings</div> : null,
 }))
 
-jest.mock('@/components/model-selector', () => ({
+vi.mock('@/components/model-selector', () => ({
   ModelSelector: () => <div data-testid="model-selector">Model Selector</div>,
 }))
 
-jest.mock('@/components/message-actions', () => ({
+vi.mock('@/components/message-actions', () => ({
   MessageActions: () => <div data-testid="message-actions">Message Actions</div>,
 }))
 
 // Mock react-markdown and react-syntax-highlighter
-jest.mock('react-markdown', () => {
-  return ({ children }: any) => <div data-testid="markdown">{children}</div>
+vi.mock('react-markdown', () => {
+  return { default: ({ children }: any) => <div data-testid="markdown">{children}</div> }
 })
 
-jest.mock('react-syntax-highlighter', () => ({
+vi.mock('react-syntax-highlighter', () => ({
   Prism: ({ children }: any) => <div data-testid="syntax-highlighter">{children}</div>,
 }))
 
-jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
+vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
   oneDark: {},
   oneLight: {},
+}))
+
+// Mock the useChat hook
+vi.mock('@/hooks/use-chat', () => ({
+  useChat: () => ({
+    messages: [],
+    sendMessage: vi.fn(),
+    isLoading: false,
+    error: null,
+    streamingState: { isStreaming: false, currentMessageId: undefined },
+    clearMessages: vi.fn(),
+    cancelStream: vi.fn(),
+  })
+}))
+
+// Mock the useMobile hook
+vi.mock('@/hooks/use-mobile', () => ({
+  useMobile: () => false
+}))
+
+// Mock next-themes properly
+vi.mock('next-themes', () => ({
+  ThemeProvider: ({ children }: any) => <div data-testid="theme-provider">{children}</div>,
+  useTheme: () => ({
+    theme: 'dark',
+    setTheme: vi.fn(),
+  })
 }))
 
 const ChatPageComponent = () => {
