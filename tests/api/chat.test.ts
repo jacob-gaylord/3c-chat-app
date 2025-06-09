@@ -1,20 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 
-// Create mock functions at module level
-const mockCreate = vi.fn()
-
-// Mock the Azure OpenAI client
-vi.mock('@azure/openai', () => ({
-  OpenAI: vi.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: mockCreate
-      }
-    }
-  }))
-}))
-
-// Mock the azure config
+// Mock the azure config first
 vi.mock('@/lib/config/azure', () => ({
   azureConfig: {
     AZURE_OPENAI_API_KEY: 'test-key-12345',
@@ -24,9 +10,35 @@ vi.mock('@/lib/config/azure', () => ({
   }
 }))
 
-import { POST } from '@/app/api/chat/route'
+// Mock the Azure OpenAI client at the module level
+vi.mock('@azure/openai', () => {
+  const mockCreate = vi.fn()
+  return {
+    OpenAI: vi.fn(() => ({
+      chat: {
+        completions: {
+          create: mockCreate
+        }
+      }
+    })),
+    _mockCreate: mockCreate // Export the mock for use in tests
+  }
+})
 
 describe('Chat API', () => {
+  let POST: any
+  let mockCreate: any
+
+  beforeAll(async () => {
+    // Import after mocking
+    const module = await import('@/app/api/chat/route')
+    POST = module.POST
+    
+    // Get the mock from the module
+    const azureModule = await import('@azure/openai') as any
+    mockCreate = azureModule._mockCreate
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
